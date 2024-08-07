@@ -1,0 +1,204 @@
+(footprint "SW_SPST_3x3-L"
+	(version 20240108)
+	(generator "pcbnew")
+	(generator_version "8.0")
+	(layer "F.Cu")
+	(descr "Low-profile SMD Tactile Switch, https://www.e-switch.com/system/asset/product_line/data_sheet/165/TL3342.pdf")
+	(tags "SPST Tactile Switch")
+	(property "Reference" "REF**"
+		(at 0 -2.25 0)
+		(layer "F.SilkS")
+		(uuid "7b5098f4-f105-4b94-815b-1c7cd8f1f449")
+		(effects
+			(font
+				(size 0.8 0.8)
+				(thickness 0.15)
+			)
+		)
+	)
+	(property "Value" "SW_SPST_3x3-L"
+		(at 0 2.5 0)
+		(layer "F.Fab")
+		(uuid "30a5f0b0-fc61-4fc4-9837-cae822700da2")
+		(effects
+			(font
+				(size 1 1)
+				(thickness 0.15)
+			)
+		)
+	)
+	(property "Footprint" ""
+		(at 0 0 0)
+		(layer "F.Fab")
+		(hide yes)
+		(uuid "d044e525-25e2-4738-ae86-393cf6fbd496")
+		(effects
+			(font
+				(size 1.27 1.27)
+				(thickness 0.15)
+			)
+		)
+	)
+	(property "Datasheet" ""
+		(at 0 0 0)
+		(layer "F.Fab")
+		(hide yes)
+		(uuid "4e5d5baa-bc57-4a2f-8229-d4d0f3ac14fe")
+		(effects
+			(font
+				(size 1.27 1.27)
+				(thickness 0.15)
+			)
+		)
+	)
+	(property "Description" ""
+		(at 0 0 0)
+		(layer "F.Fab")
+		(hide yes)
+		(uuid "e5b2be6f-673d-4f3b-9d32-42b4d8e2f51b")
+		(effects
+			(font
+				(size 1.27 1.27)
+				(thickness 0.15)
+			)
+		)
+	)
+	(attr smd)
+	(fp_line
+		(start -1.5 -1.5)
+		(end 2.032 -1.5)
+		(stroke
+			(width 0.12)
+			(type solid)
+		)
+		(layer "F.SilkS")
+		(uuid "4d3b698c-a3df-4d18-bfda-c49256c479d7")
+	)
+	(fp_line
+		(start -1.5 1.5)
+		(end -1.5 -1.5)
+		(stroke
+			(width 0.12)
+			(type solid)
+		)
+		(layer "F.SilkS")
+		(uuid "e3494512-9f01-40a9-8b9f-3ed528e4fc5d")
+	)
+	(fp_line
+		(start -1.5 1.5)
+		(end 2.032 1.5)
+		(stroke
+			(width 0.12)
+			(type solid)
+		)
+		(layer "F.SilkS")
+		(uuid "f8bf21d4-0c69-4d8a-9ada-77bcb633b302")
+	)
+	(fp_line
+		(start 2.032 1.5)
+		(end 2.032 -1.5)
+		(stroke
+			(width 0.12)
+			(type solid)
+		)
+		(layer "F.SilkS")
+		(uuid "70b1ade9-6458-43c1-9816-ea6130912f68")
+	)
+	(fp_line
+		(start -2.286 -1.6)
+		(end -2.286 1.6)
+		(stroke
+			(width 0.05)
+			(type solid)
+		)
+		(layer "F.CrtYd")
+		(uuid "f51beb4d-2236-499c-8fbb-bd189fcfc400")
+	)
+	(fp_line
+		(start -2.286 -1.6)
+		(end 2.794 -1.6)
+		(stroke
+			(width 0.05)
+			(type solid)
+		)
+		(layer "F.CrtYd")
+		(uuid "c50bb004-91da-4cc4-95b2-7b7622021163")
+	)
+	(fp_line
+		(start -2.286 1.6)
+		(end 2.794 1.6)
+		(stroke
+			(width 0.05)
+			(type solid)
+		)
+		(layer "F.CrtYd")
+		(uuid "08ab31cd-deda-4a55-a105-470a60c24bf8")
+	)
+	(fp_line
+		(start 2.794 -1.6)
+		(end 2.794 1.6)
+		(stroke
+			(width 0.05)
+			(type solid)
+		)
+		(layer "F.CrtYd")
+		(uuid "110c812f-5202-4ad9-ba4c-e09b024ca85e")
+	)
+	(fp_circle
+		(center 0 0)
+		(end 0.9 0)
+		(stroke
+			(width 0.1)
+			(type solid)
+		)
+		(fill none)
+		(layer "F.Fab")
+		(uuid "0ceec846-2f48-4d7f-992b-bd3e16365295")
+	)
+	(fp_text user "${REFERENCE}"
+		(at 0 -2.25 0)
+		(layer "F.Fab")
+		(uuid "ab7cf1c9-f3c4-443c-8d86-cb507d4d5107")
+		(effects
+			(font
+				(size 1 1)
+				(thickness 0.15)
+			)
+		)
+	)
+	(pad "1" smd rect
+		(at -1.868 -1.187)
+		(size 0.836 0.674)
+		(layers "F.Cu" "F.Paste" "F.Mask")
+		(uuid "3bbe87ef-9271-4f50-8e68-24c48e38b412")
+	)
+	(pad "1" smd rect
+		(at 2.365 -1.27)
+		(size 0.858 0.588)
+		(layers "F.Cu" "F.Paste" "F.Mask")
+		(uuid "6f661cef-28ae-48ef-b50f-6708e9435423")
+	)
+	(pad "2" smd rect
+		(at -1.868 1.187)
+		(size 0.836 0.674)
+		(layers "F.Cu" "F.Paste" "F.Mask")
+		(uuid "39faecdf-9a82-4033-a205-7452f8a192cf")
+	)
+	(pad "2" smd rect
+		(at 2.365 1.187)
+		(size 0.858 0.674)
+		(layers "F.Cu" "F.Paste" "F.Mask")
+		(uuid "7bf3e6fc-ce32-4091-baca-b04e57b7d3c3")
+	)
+	(model "${KICAD6_3DMODEL_DIR}/Button_Switch_SMD.3dshapes/SW_SPST_PTS645.step"
+		(offset
+			(xyz 0 0 0)
+		)
+		(scale
+			(xyz 0.48 0.48 0.2)
+		)
+		(rotate
+			(xyz 0 0 0)
+		)
+	)
+)

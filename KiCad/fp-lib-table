@@ -1,0 +1,11 @@
+(fp_lib_table
+  (version 7)
+  (lib (name "minibadge_kicad_old")(type "KiCad")(uri "/Users/zane/Downloads/minibadge-master/KiCAD/minibadge_kicad.pretty")(options "")(descr "")(disabled))
+  (lib (name "button footprints")(type "KiCad")(uri "/Users/zane/Downloads/ul_PTS647SM70SMTR2LFS/KiCADv6/footprints.pretty")(options "")(descr ""))
+  (lib (name "Keebio-Parts.pretty-master_old")(type "KiCad")(uri "/Users/zane/Downloads/Keebio-Parts.pretty-master")(options "")(descr "")(disabled))
+  (lib (name "minibadge_kicad")(type "KiCad")(uri "/Users/zane/Downloads/minibadge-master/KiCAD/minibadge_kicad.pretty")(options "")(descr "")(disabled))
+  (lib (name "Keebio-Parts.pretty-master")(type "KiCad")(uri "/Users/zane/Downloads/Keebio-Parts.pretty-master")(options "")(descr ""))
+  (lib (name "MiniBadge")(type "KiCad")(uri "/Users/zane/Downloads/minibadge-hamster/KiCADv6/MiniBadge.pretty")(options "")(descr ""))
+  (lib (name "minbadge-Eagle")(type "KiCad")(uri "/Users/zane/Downloads/minibadge-hamster/Eagle")(options "")(descr ""))
+  (lib (name "Custom")(type "KiCad")(uri "${KIPRJMOD}/Custom Parts.pretty")(options "")(descr ""))
+)

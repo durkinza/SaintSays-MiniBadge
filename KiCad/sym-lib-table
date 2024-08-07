@@ -1,0 +1,8 @@
+(sym_lib_table
+  (version 7)
+  (lib (name "saintcon-minibadge")(type "Legacy")(uri "/Users/zane/Downloads/minibadge-master/KiCAD/saintcon-minibadge.lib")(options "")(descr ""))
+  (lib (name "button PTS 647 SN50 SMTR2 LFS")(type "KiCad")(uri "/Users/zane/Downloads/KiCADv6/2024-07-07_18-46-30.kicad_sym")(options "")(descr "")(disabled)(hidden))
+  (lib (name "button PTS 647 SM70 SMTR2 LFS")(type "KiCad")(uri "/Users/zane/Downloads/ul_PTS647SM70SMTR2LFS/KiCADv6/2024-07-07_18-56-26.kicad_sym")(options "")(descr ""))
+  (lib (name "Switch")(type "KiCad")(uri "/Users/zane/Downloads/kicad-symbols-master/Switch.kicad_sym")(options "")(descr ""))
+  (lib (name "MiniBadge")(type "KiCad")(uri "/Users/zane/Downloads/minibadge-hamster/KiCADv6/MiniBadge.kicad_sym")(options "")(descr ""))
+)
