@@ -1,55 +1,41 @@
+// The I2C bus allows the Main badge to communicate with this minibadge 
+// to pull/set settings, high scores, etc.
 // #define USEI2C true
+
+// Using the EEPROM allows the badge to retain highscore and settings when powered off. 
 #define USEEEPROM true
 
+// Checks for certain compiler packages.
 #ifdef PINMAPPING_CCW
 #error "Sketch was written for clockwise pin mapping!"
 #endif
 
-#ifdef USEEEPROM
-#include <EEPROM.h>
-#endif
 
-#ifdef USEI2C
-#include <Wire.h>
-#endif
-
+/*******************************
+******* GENERAL SETTINGS *******
+********************************/
 // Pin definitions
 #define BUTTONCOUNT 4
 #define LEDCOUNT 4
-// const uint8_t ledPins[LEDCOUNT] = {10, 9, 8, 7}; // LED pins
-// const uint8_t buttonPins[BUTTONCOUNT] = {1, 2, 3, 4}; // Button pins
-const uint8_t ledPins[LEDCOUNT] = {10, 9, 8, 7}; // LED pins
-const uint8_t buttonPins[BUTTONCOUNT] = {0, 1, 2, 3}; // Button pins
-const uint8_t clockPin = 0; // Clock Sensing pin.
+// const uint8_t ledPins[LEDCOUNT] = {10, 9, 8, 7}; // LED pins (v1,v2 minibadge only)
+// const uint8_t buttonPins[BUTTONCOUNT] = {1, 2, 3, 4}; // Button pins (v1,v2 minibadge only)
+// const uint8_t ledPins[LEDCOUNT] = {10, 11, 12, 13}; // LED pins (v3+ minibadge)
+const uint8_t ledPins[LEDCOUNT] = {3, 2, 1, 0}; // LED pins (v3+ minibadge)
+const uint8_t buttonPins[BUTTONCOUNT] = {7, 8, 9, 10}; // Button pins (v3+ minibadge)
+const uint8_t clockPin = 5; // Clock Sensing pin. (v3+ minibadge)
 
 // Variables for menu settings
 #define SETTINGSCOUNT 4 // Settings count should always be <= button and LED counts, and should never exceed 8.
-bool settings[SETTINGSCOUNT] = {true, true, true, true}; // {showScoreWhileAsleep, FastMode, Extra, }
+bool settings[SETTINGSCOUNT] = {true, true, true, true}; // {showScoreWhileAsleep, (non)FastMode, (non)ChaoticMode, PartyModeOnBoot }
 bool buttonsPressed[BUTTONCOUNT] = {false, false, false, false}; // Buttons Pressed State.
 
 // Variables for transitions and debounce
 const unsigned int loopDelay = 200; // Give users time to press buttons between loops
-const unsigned long resetholdTime = 15000; // 15 seconds in milliseconds
+const unsigned long resetholdTime = 10000; // 10 seconds in milliseconds
 const unsigned long gameTimeout = 60000;  // Wait 1 minute for a button to be pressed.
 
-#if defined(USEI2C)
-/*******************************
-************ I2C ***************
-********************************/
-const uint8_t I2CDeviceAddress = 0x42; // I2C address for this device
-
-#endif
-
-#ifdef USEEEPROM
-/*******************************
-********** EEPROM **************
-********************************/
-// EEPROM address for high score
-const uint8_t EEPROMhighScoreAddress = 0;
-const uint8_t EEPROMsettingsAddress = 8;
-#endif
 // Track highest score
-uint8_t highScore = 1;
+volatile uint32_t highScore = 0;
 
 // Variables for game state
 uint8_t pattern[24]; // Max pattern length (Should this be longer than 16?)
@@ -57,8 +43,60 @@ uint8_t patternLength = 0; // Current pattern Index (a.k.a current score)
 int patternPulseSlow = 500; // How long to show each pattern step for.
 int patternPulseQuick = 100; // How long to show each pattern step for.
 
+
+// Tracking the current mode the badge is in. 
 enum Modes {SLEEPMODE, SETTINGSMODE, GAMEMODE, LIGHTSHOWMODE}; 
 Modes mode = SLEEPMODE;
+
+
+#ifdef USEEEPROM
+/*******************************
+********** EEPROM **************
+********************************/
+#include <EEPROM.h>
+// EEPROM address for high score
+const uint8_t EEPROMhighScoreAddress = 0;
+const uint8_t EEPROMsettingsAddress = 8;
+#endif
+
+#ifdef USEI2C
+/*******************************
+************ I2C ***************
+********************************/
+// Note that the ATTiny Core's implmentation of wire.h is used
+// ref: https://github.com/SpenceKonde/ATTinyCore/blob/v2.0.0-devThis-is-the-head-submit-PRs-against-this/avr/libraries/Wire/src/Wire.h
+// ref: https://github.com/lukejenkins/minibadge/blob/master/I2C%20Example%20Code/Minibadge_sample_code.ino
+#include <Wire.h>
+#define I2C_DEVICE_ADDR 0x23 // I2C address for this device
+#define I2C_WRITE_SUPPORT 0 // Set to 1 to enable Writing Score and settings
+// Writing Actions:
+#define I2C_WRITE_SCORE 1
+#define I2C_WRITE_SETTING_1 2
+#define I2C_WRITE_SETTING_2 3
+#define I2C_WRITE_SETTING_3 4
+#define I2C_WRITE_SETTING_4 5
+#define I2C_WRITE_BRIGHTNESS 6
+// Reading Actions:
+#define I2C_READ_NOP 0 // No operation
+#define I2C_READ_SCORE 1 // Reading High Score
+#define I2C_READ_SETTING_1 2 // Reading Setting 1
+#define I2C_READ_SETTING_2 3 // Reading Setting 2
+#define I2C_READ_SETTING_3 4 // Reading Setting 3
+#define I2C_READ_SETTING_4 5 // Reading Setting 4
+#define I2C_READ_BRIGHTNESS 6 // Reading LED Brightness
+uint8_t i2cReadAction = I2C_READ_SCORE;
+
+
+// Any variable being writen to inside an interupt Ie. request() or recieve() should be volatile.
+// These are default values and will change as the badge talks to the minibadge.
+// enum ReadStates { I2C_STATE_NOP, RespondWrite, RespondRead, ReadPartTwo, ReadPartThree };
+#define I2C_STATE_NOP 0
+#define I2C_STATE_WRITE 1
+#define I2C_STATE_READ 2
+volatile uint8_t i2cState = I2C_STATE_NOP;
+// volatile ReadStates reading_state = I2C_STATE_NOP; // this should only be set to RespondWrite or RespondRead in the recieve function.
+volatile uint8_t brightness = 100;
+#endif
 
 void setup() {
   // Initialize LEDs as outputs
@@ -86,16 +124,23 @@ void setup() {
 
 #ifdef USEI2C
   // Share score on I2C bus
-  Wire.begin(I2CDeviceAddress); // Join I2C bus with the given address
-  Wire.onRequest(requestI2CReadEvent); // Register event handler for I2C reading
-  Wire.onReceive(requestI2CWriteEvent); // Register event handler for I2C writing
+  Wire.onRequest(RequestI2CEvent); // Register event handler for I2C reading
+  Wire.onReceive(RecieveI2CEvent); // Register event handler for I2C writing
+  Wire.begin(I2C_DEVICE_ADDR); // Join I2C bus with the given address
+#else
+  // Set I2C pins to read/high to not interfere with the rest of the bus
+  // TODO: research best practice for that?
 #endif
 
   // Show Startup Sequence
   showStartup();
 
   // Set initial state
-  mode = SLEEPMODE;
+  if(settings[3]){
+    mode = SLEEPMODE;
+  }else{
+    mode = LIGHTSHOWMODE;
+  }
 }
 
 void loop() {
@@ -182,12 +227,20 @@ void handleGameMode(){
   turnOffLights();
 
   while(true){
-      pattern[patternLength] = random(0, 4); // from 1 to 4;
+      if(!settings[2]){
+        // if Chaotic Mode, build a new pattern each time.
+        for(uint8_t i = 0; i <= patternLength; i++){
+          pattern[i] = (uint8_t)random(0, 4); // from 1 to 4;
+        }
+      }else{
+        // When not in Chatoic Mode, just add a new value to the end of the pattern
+        pattern[patternLength] = (uint8_t)random(0, 4); // from 1 to 4;
+      }
       flashPattern();
       // Have user input all parts of pattern.
       for(uint8_t patternIndex=0; patternIndex < patternLength; patternIndex++){
           // loop forever while waiting for user to press a button
-          int lastButtonTime = millis();
+          unsigned long lastButtonTime = millis();
           while(true){
               checkButtonsPressed();
               if(outsideButtonsPressed()){
@@ -208,39 +261,31 @@ void handleGameMode(){
                       }
                   }
                   delay(200); // let the user see the light they pressed.
-                  for(uint8_t i=0; i < LEDCOUNT; i++){
-                      digitalWrite(ledPins[i], LOW);
-                  }
+                  turnOffLights();
                   // Done flashing.
                   // Now check Pattern.
                   if(!checkPatternMatch(patternIndex)) {
                       // failed check, 
                       // Save scoe and exit.
-                      if(highScore < patternLength-1){
-                        highScore = patternLength-1;
+                      if(highScore < patternLength){
+                        highScore = patternLength;
                       }
                       #ifdef USEEEPROM
                       saveHighScoreToEEPROM();
                       #endif
-                      mode = SLEEPMODE;
                       flashFailedPattern();
+                      mode = SLEEPMODE;
                       // Leave GameMODE;
                       return;
                   }
                   //check passed, break out of while loop to for loop
                   break;
               }
-              // TODO: If 1 minute has passed and no buttons pressed, leave game.
-              // If no buttons pressed, loop again.
               delay(loopDelay);
           }
           // Wait for user to let go of button
-          while(true){
+          while(anyButtonsPressed()){
               checkButtonsPressed();
-              if(!anyButtonsPressed()){
-                // Let the user take their hand off the button.
-                  break;
-              }
           }
       }
       // If the user got the pattern correct, 
@@ -402,6 +447,8 @@ void flashFailedPattern(){
 
 
 void displayHighScore(){
+  //TODO If Score is >16, then just show all lights on.
+  // Alternatative: flash throught the full byte?
   for (uint8_t i = 0; i < LEDCOUNT; i++) {
     if (highScore & (1 << i)) {
       digitalWrite(ledPins[i], HIGH);
@@ -678,14 +725,120 @@ void readSettingsFromEEPROM() {
 ******** I2C HELPERS ***********
 *******************************/
 // Reference: https://github.com/lukejenkins/minibadge/blob/master/I2C%20Example%20Code/README.md
-void requestI2CReadEvent() {
+void RequestI2CEvent() {
+
+  // If the badge is writing then i2cState will be RespondWrite from the recieve function.
+  // This tells the badge wether this minibadge supports write events.
+  if(i2cState == I2C_STATE_WRITE){
+    Wire.write(I2C_WRITE_SUPPORT);
+  // If i2cState is set to RespondRead then the badge is beginning the read request.
+  }else if(i2cState == I2C_STATE_READ ){
+
+    // We will loop through the returned values every time a read is made. 
+    // This switch statement will handle the sending of each value for the current loop, 
+    // and setting up the action for the next loop.
+    // At the end of the loop, return a NOP to show that we're starting the responses over. 
+    // (length) --> (score) --> (setting1)  --> (setting2)  --> (setting3)  --> (setting4)  --> (brightness) --> (NOP) / loop
+    switch(i2cReadAction){
+      // When 
+      case I2C_STATE_NOP:
+        // Send the i2cReadAction to the badge.
+        Wire.write(i2cReadAction);
+        i2cReadAction = I2C_READ_SCORE;
+        break;
+      case I2C_READ_SCORE:
+        // Send the i2cReadAction to the badge.
+        Wire.write(i2cReadAction);
+        Wire.write(sizeof(highScore));
+        Wire.write(highScore);
+        i2cReadAction = I2C_READ_SCORE;
+        break;
+    }
+
+
+    // If it is 2 for a text message let this function know next read event will need to send the
+    // message length by setting i2cState to ReadPartTwo.
+    if(i2cReadAction == I2C_READ_SCORE){
+      i2cState = I2C_READ_SCORE;
+
+    // If i2cReadAction is anything else then set i2cState to I2C_STATE_NOP to indicate the minibadge
+    // should not respond with anything else till the next init sequence from the badge.
+    }else{
+      i2cState = I2C_STATE_NOP;
+    }
+
+    // It is a good idea to set the i2cReadAction to zero after any value is read.
+    // This will prevent the minibadge from "spamming" its message if the main badge
+    // is not checking for that.
+    i2cReadAction = I2C_READ_NOP;
+
+  // // If i2cState is I2C_STATE_READPT2 then the minibadge should respond with the text message length and
+  // // advance i2cState to I2C_STATE_READPT3 to let the minibadge know next read should be the text message.
+  // }else if(i2cState == I2C_STATE_READPT2){
+  //   Wire.write(message_length);
+  //   i2cState = I2C_STATE_READPT3;
+
+  // // If i2cState is I2C_STATE_READPT3 then the minibadge should send the text message one byte at a time.
+  // // Once it is done it should set i2cState to I2C_STATE_READPT3 to let the minibadge know to do nothing
+  // // until the badge inits communication again.
+  // }else if(i2cState == I2C_STATE_READPT3){
+  //   for(uint8_t i = 0; i < message_length; i++){
+  //     Wire.write(message[i]);
+  //   }
+  //   i2cState = I2C_STATE_NOP;
+  }
+
+  /*
   Wire.write(0x02); // Say we are responding with text.
   //Wire.write(sizeof(highscore)); // Send the length of the message
   Wire.write(0x01); // Only a single byte for the score?
   Wire.write(highScore); // Send the current score as a byte
+  */
 }
-void requestI2CWriteEvent(){
-  // No Write support
-  Wire.write(0x00); // Respond with "no write support".
+// Handle Recieiving data on I2C bus.
+// byteCount will store the number of bytes sent in the write event.
+void RecieveI2CEvent(int byteCount){
+  // This will read the first byte in the buffer into the byteOne variable.
+  uint8_t byteOne = Wire.read();
+  // If the first byte read is 0x00 then we know the minibadge initiation sequence was started.
+  if(byteOne == 0x00){
+    // This reads the next byte and will let us know if the badge wants to read (The byte is one)
+    // or write to the minibadge (The byte is zero).
+    i2cState = Wire.read() ? I2C_STATE_READ: I2C_STATE_WRITE;
+
+  // If the first byte is anything other than 0x00 then we are handling a write event.
+  // But if we don't support writing, then ignore the packet.
+  }else if(I2C_WRITE_SUPPORT == 1){
+    // The next bytes says which section/space to write to. 
+    uint8_t writeSection = Wire.read();
+
+    switch(writeSection){
+      case I2C_WRITE_SCORE:
+        // if this is a score update. The score is 32 bits long and in big endian.
+        // Note that only a 4 bit score can be displayed on the screen, even though a larger score could be set.
+        highScore = (((uint32_t)Wire.read()) << 8) + (uint32_t)Wire.read();
+        break;
+      case I2C_WRITE_BRIGHTNESS:
+        // This is for a brightness update. The brightness range should be 0-127.
+        brightness = Wire.read();
+        break;
+      case I2C_WRITE_SETTING_1:
+        // if this is for setting 1, update the setting.
+        settings[0] = Wire.read()>0?true:false;
+        break;  
+      case I2C_WRITE_SETTING_2:
+        // if this is for setting 2, update the setting.
+        settings[1] = Wire.read()>0?true:false;
+        break;  
+      case I2C_WRITE_SETTING_3:
+        // if this is for setting 3, update the setting.
+        settings[2] = Wire.read()>0?true:false;
+        break;  
+      case I2C_WRITE_SETTING_4:
+        // if this is for setting 4, update the setting.
+        settings[3] = Wire.read()>0?true:false;
+        break;  
+    }
+  }
 }
 #endif

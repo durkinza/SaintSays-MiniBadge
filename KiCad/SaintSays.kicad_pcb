@@ -329,7 +329,7 @@
 		(at 150.25 85.4875 90)
 		(descr "LED SMD 1206 (3216 Metric), square (rectangular) end terminal, IPC_7351 nominal, (Body size source: http://www.tortai-tech.com/upload/download/2011102023233369053.pdf), generated with kicad-footprint-generator")
 		(tags "LED handsolder")
-		(property "Reference" "D4"
+		(property "Reference" "8"
 			(at -1.7125 1.75 180)
 			(layer "F.SilkS")
 			(uuid "5d713551-bc68-4ea9-bac1-8056c029bb95")
@@ -564,7 +564,7 @@
 		(at 136.75 85.5125 90)
 		(descr "LED SMD 1206 (3216 Metric), square (rectangular) end terminal, IPC_7351 nominal, (Body size source: http://www.tortai-tech.com/upload/download/2011102023233369053.pdf), generated with kicad-footprint-generator")
 		(tags "LED handsolder")
-		(property "Reference" "D1"
+		(property "Reference" "1"
 			(at -1.5875 1.75 180)
 			(layer "F.SilkS")
 			(uuid "4e5960c2-a7b7-453a-8e90-cc8ff77285d2")
@@ -1017,7 +1017,7 @@
 		(at 141.5 85.09 -90)
 		(descr "LED SMD 1206 (3216 Metric), square (rectangular) end terminal, IPC_7351 nominal, (Body size source: http://www.tortai-tech.com/upload/download/2011102023233369053.pdf), generated with kicad-footprint-generator")
 		(tags "LED handsolder")
-		(property "Reference" "D2"
+		(property "Reference" "2"
 			(at 1.71 -1.7 0)
 			(layer "F.SilkS")
 			(uuid "a889a752-dcfa-4254-89dd-f85f29c374e9")
@@ -1252,7 +1252,7 @@
 		(at 146.25 85.09 -90)
 		(descr "LED SMD 1206 (3216 Metric), square (rectangular) end terminal, IPC_7351 nominal, (Body size source: http://www.tortai-tech.com/upload/download/2011102023233369053.pdf), generated with kicad-footprint-generator")
 		(tags "LED handsolder")
-		(property "Reference" "D3"
+		(property "Reference" "4"
 			(at 1.81 -1.65 0)
 			(layer "F.SilkS")
 			(uuid "9a14d156-048c-4bb3-97df-bcf402fd19d3")
