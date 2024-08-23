@@ -1,6 +1,6 @@
 // The I2C bus allows the Main badge to communicate with this minibadge 
 // to pull/set settings, high scores, etc.
-// #define USEI2C true
+#define USEI2C true
 
 // Using the EEPROM allows the badge to retain highscore and settings when powered off. 
 #define USEEEPROM true
@@ -68,32 +68,37 @@ const uint8_t EEPROMsettingsAddress = 8;
 // ref: https://github.com/lukejenkins/minibadge/blob/master/I2C%20Example%20Code/Minibadge_sample_code.ino
 #include <Wire.h>
 #define I2C_DEVICE_ADDR 0x23 // I2C address for this device
-#define I2C_WRITE_SUPPORT 0 // Set to 1 to enable Writing Score and settings
+uint8_t I2C_WRITE_SUPPORT = 1; // Set to 1 to enable Writing Score and settings
 // Writing Actions:
-#define I2C_WRITE_SCORE 1
-#define I2C_WRITE_SETTING_1 2
-#define I2C_WRITE_SETTING_2 3
-#define I2C_WRITE_SETTING_3 4
-#define I2C_WRITE_SETTING_4 5
-#define I2C_WRITE_BRIGHTNESS 6
+#define I2C_WRITE_SCORE 0
+#define I2C_WRITE_SETTING_1 1
+#define I2C_WRITE_SETTING_2 2
+#define I2C_WRITE_SETTING_3 3
+#define I2C_WRITE_SETTING_4 4
+#define I2C_WRITE_BRIGHTNESS 5
 // Reading Actions:
 #define I2C_READ_NOP 0 // No operation
-#define I2C_READ_SCORE 1 // Reading High Score
-#define I2C_READ_SETTING_1 2 // Reading Setting 1
-#define I2C_READ_SETTING_2 3 // Reading Setting 2
-#define I2C_READ_SETTING_3 4 // Reading Setting 3
-#define I2C_READ_SETTING_4 5 // Reading Setting 4
-#define I2C_READ_BRIGHTNESS 6 // Reading LED Brightness
+#define I2C_READ_BUTTON 1 // toggling button
+#define I2C_READ_SCORE 2 // Reading High Score
+// #define I2C_READ_SETTING_1 20 // Reading Setting 1
+// #define I2C_READ_SETTING_2 30 // Reading Setting 2
+// #define I2C_READ_SETTING_3 40 // Reading Setting 3
+// #define I2C_READ_SETTING_4 50 // Reading Setting a4
+// #define I2C_READ_BRIGHTNESS 60 // Reading LED Brightness
 uint8_t i2cReadAction = I2C_READ_SCORE;
 
 
 // Any variable being writen to inside an interupt Ie. request() or recieve() should be volatile.
 // These are default values and will change as the badge talks to the minibadge.
 // enum ReadStates { I2C_STATE_NOP, RespondWrite, RespondRead, ReadPartTwo, ReadPartThree };
-#define I2C_STATE_NOP 0
-#define I2C_STATE_WRITE 1
-#define I2C_STATE_READ 2
-volatile uint8_t i2cState = I2C_STATE_NOP;
+// #define I2C_STATE_NOP 0
+// #define I2C_STATE_WRITE 1
+// #define I2C_STATE_READ 2
+// #define I2C_STATE_READ_PT2 3 // Rading High Score
+// #define I2C_STATE_READ_PT3 4 // Rading High Score
+
+enum ReadStates { I2C_STATE_NOP, I2C_STATE_WRITE, I2C_STATE_READ, I2C_STATE_READ_PT2, I2C_STATE_READ_PT3 };
+volatile ReadStates i2cState = I2C_STATE_NOP;
 // volatile ReadStates reading_state = I2C_STATE_NOP; // this should only be set to RespondWrite or RespondRead in the recieve function.
 volatile uint8_t brightness = 100;
 #endif
@@ -110,7 +115,8 @@ void setup() {
   for (uint8_t i = 0; i < BUTTONCOUNT; i++) {
     pinMode(buttonPins[i], INPUT_PULLUP);
   }
-
+  
+  pinMode(clockPin, INPUT);
 
 #ifdef USEEEPROM
   // Load the high score and settings from EEPROM.
@@ -124,12 +130,14 @@ void setup() {
 
 #ifdef USEI2C
   // Share score on I2C bus
-  Wire.onRequest(RequestI2CEvent); // Register event handler for I2C reading
-  Wire.onReceive(RecieveI2CEvent); // Register event handler for I2C writing
+  Wire.onRequest(RequestI2CEvent); // Register event handler for I2C Request events
+  Wire.onReceive(RecieveI2CEvent); // Register event handler for I2C Recieve events
   Wire.begin(I2C_DEVICE_ADDR); // Join I2C bus with the given address
 #else
-  // Set I2C pins to read/high to not interfere with the rest of the bus
-  // TODO: research best practice for that?
+  // Set I2C pins to read so they do not interfere with the rest of the bus
+  // Pins 6&5 for the ATTINY84a.
+  pinMode(6, INPUT); // SDA
+  pinMode(5, INPUT); // SCL
 #endif
 
   // Show Startup Sequence
@@ -221,7 +229,8 @@ void handleGameMode(){
   // Clear last Game
   memset(pattern, 0, sizeof(pattern));
   patternLength = 0;
-  randomSeed(analogRead(0));
+  // randomSeed(analogRead(unconnectedPin));
+  randomSeed(micros());
 
   // Turn off all LEDs
   turnOffLights();
@@ -331,11 +340,15 @@ void handleLightShowMode(){
   // Do cool light patterns to make brain happy!
   uint8_t LS_index = 0; // which pattern are we doing
   while(true){
-    LS_index = random(0,2);
+    LS_index = random(0,4);
     checkButtonsPressed();
     if(outsideButtonsPressed()){
         // If both outside buttons are pressed, leave to sleepmode.
         mode = SLEEPMODE;
+        // Wait for user to let go of button
+        while(anyButtonsPressed()){
+            checkButtonsPressed();
+        }
         return;
     }
     switch(LS_index){
@@ -344,6 +357,12 @@ void handleLightShowMode(){
         break;
       case 1:
         lightShowPattern2();
+        break;
+      case 2:
+        lightShowPattern3();
+        break;
+      case 3:
+        lightShowPattern4();
         break;
     }
     delay(loopDelay);
@@ -449,8 +468,12 @@ void flashFailedPattern(){
 void displayHighScore(){
   //TODO If Score is >16, then just show all lights on.
   // Alternatative: flash throught the full byte?
+  uint32_t score = highScore;
+  if (highScore >= 16){
+    score = 0xFF;
+  }
   for (uint8_t i = 0; i < LEDCOUNT; i++) {
-    if (highScore & (1 << i)) {
+    if (score & (1 << i)) {
       digitalWrite(ledPins[i], HIGH);
     } else {
       digitalWrite(ledPins[i], LOW);
@@ -598,13 +621,13 @@ void lightShowPattern1(){
 void lightShowPattern2(){
 // void lightShowPattern2(uint8_t flashes = 20);
 // void lightShowPattern2(uint8_t flashes = 20, uint8_t flash_delay = 100){
-  uint8_t flashes = 20;
+  uint8_t flashes = 10;
   uint8_t flash_delay = 200;
 
   // random
   uint8_t led = 0;
   for(uint8_t i = 0; i < flashes; i++){
-    led = random(1,4); // Pick a random LED
+    led = random(0,4); // Pick a random LED
     digitalWrite(ledPins[led], HIGH);
     delay(flash_delay);
     digitalWrite(ledPins[led], LOW);
@@ -617,55 +640,55 @@ void lightShowPattern3(){
     //outside flash
     digitalWrite(ledPins[0], HIGH);
     digitalWrite(ledPins[LEDCOUNT-1], HIGH);
-    delay(100);
+    delay(200);
     digitalWrite(ledPins[0], LOW);
     digitalWrite(ledPins[LEDCOUNT-1], LOW);
-    delay(100);
+    delay(200);
     digitalWrite(ledPins[0], HIGH);
     digitalWrite(ledPins[LEDCOUNT-1], HIGH);
-    delay(100);
+    delay(200);
     digitalWrite(ledPins[0], LOW);
     digitalWrite(ledPins[LEDCOUNT-1], LOW);
     //inside flash
     digitalWrite(ledPins[1], HIGH);
     digitalWrite(ledPins[LEDCOUNT-2], HIGH);
-    delay(100);
+    delay(200);
     digitalWrite(ledPins[1], LOW);
     digitalWrite(ledPins[LEDCOUNT-2], LOW);
-    delay(100);
+    delay(200);
     digitalWrite(ledPins[1], HIGH);
     digitalWrite(ledPins[LEDCOUNT-2], HIGH);
-    delay(100);
+    delay(200);
     digitalWrite(ledPins[1], LOW);
     digitalWrite(ledPins[LEDCOUNT-2], LOW);
   }
 }
 void lightShowPattern4(){
-  // out to in
+  // every other flash
   uint8_t loops = 3;
   for(uint8_t i = 0; i < loops; i++){
     //odd flash
     digitalWrite(ledPins[0], HIGH);
     digitalWrite(ledPins[LEDCOUNT-2], HIGH);
-    delay(100);
+    delay(200);
     digitalWrite(ledPins[0], LOW);
     digitalWrite(ledPins[LEDCOUNT-2], LOW);
-    delay(100);
+    delay(200);
     digitalWrite(ledPins[0], HIGH);
     digitalWrite(ledPins[LEDCOUNT-2], HIGH);
-    delay(100);
+    delay(200);
     digitalWrite(ledPins[0], LOW);
     digitalWrite(ledPins[LEDCOUNT-2], LOW);
     //even flash
     digitalWrite(ledPins[1], HIGH);
     digitalWrite(ledPins[LEDCOUNT-1], HIGH);
-    delay(100);
+    delay(200);
     digitalWrite(ledPins[1], LOW);
     digitalWrite(ledPins[LEDCOUNT-1], LOW);
-    delay(100);
+    delay(200);
     digitalWrite(ledPins[1], HIGH);
     digitalWrite(ledPins[LEDCOUNT-1], HIGH);
-    delay(100);
+    delay(200);
     digitalWrite(ledPins[1], LOW);
     digitalWrite(ledPins[LEDCOUNT-1], LOW);
   }
@@ -734,32 +757,34 @@ void RequestI2CEvent() {
   // If i2cState is set to RespondRead then the badge is beginning the read request.
   }else if(i2cState == I2C_STATE_READ ){
 
-    // We will loop through the returned values every time a read is made. 
-    // This switch statement will handle the sending of each value for the current loop, 
-    // and setting up the action for the next loop.
-    // At the end of the loop, return a NOP to show that we're starting the responses over. 
-    // (length) --> (score) --> (setting1)  --> (setting2)  --> (setting3)  --> (setting4)  --> (brightness) --> (NOP) / loop
-    switch(i2cReadAction){
-      // When 
-      case I2C_STATE_NOP:
-        // Send the i2cReadAction to the badge.
-        Wire.write(i2cReadAction);
-        i2cReadAction = I2C_READ_SCORE;
-        break;
-      case I2C_READ_SCORE:
-        // Send the i2cReadAction to the badge.
-        Wire.write(i2cReadAction);
-        Wire.write(sizeof(highScore));
-        Wire.write(highScore);
-        i2cReadAction = I2C_READ_SCORE;
-        break;
-    }
+    Wire.write(0x02); // Say we're responding with TEXT type.
+
+    // // We will loop through the returned values every time a read is made. 
+    // // This switch statement will handle the sending of each value for the current loop, 
+    // // and setting up the action for the next loop.
+    // // At the end of the loop, return a NOP to show that we're starting the responses over. 
+    // // (length) --> (score) --> (setting1)  --> (setting2)  --> (setting3)  --> (setting4)  --> (brightness) --> (NOP) / loop
+    // switch(i2cReadAction){
+    //   // When 
+    //   case I2C_STATE_NOP:
+    //     // Send the i2cReadAction to the badge.
+    //     Wire.write(i2cReadAction);
+    //     i2cReadAction = I2C_READ_SCORE;
+    //     break;
+    //   case I2C_READ_SCORE:
+    //     // Send the i2cReadAction to the badge.
+    //     Wire.write(i2cReadAction);
+    //     Wire.write(sizeof(highScore));
+    //     Wire.write(highScore);
+    //     i2cReadAction = I2C_READ_SCORE;
+    //     break;
+    // }
 
 
     // If it is 2 for a text message let this function know next read event will need to send the
     // message length by setting i2cState to ReadPartTwo.
     if(i2cReadAction == I2C_READ_SCORE){
-      i2cState = I2C_READ_SCORE;
+      i2cState = I2C_STATE_READ_PT2;
 
     // If i2cReadAction is anything else then set i2cState to I2C_STATE_NOP to indicate the minibadge
     // should not respond with anything else till the next init sequence from the badge.
@@ -772,28 +797,23 @@ void RequestI2CEvent() {
     // is not checking for that.
     i2cReadAction = I2C_READ_NOP;
 
-  // // If i2cState is I2C_STATE_READPT2 then the minibadge should respond with the text message length and
-  // // advance i2cState to I2C_STATE_READPT3 to let the minibadge know next read should be the text message.
-  // }else if(i2cState == I2C_STATE_READPT2){
-  //   Wire.write(message_length);
-  //   i2cState = I2C_STATE_READPT3;
+  // If i2cState is I2C_STATE_READPT2 then the minibadge should respond with the text message length and
+  // advance i2cState to I2C_STATE_READPT3 to let the minibadge know next read should be the text message.
+  }else if(i2cState == I2C_STATE_READ_PT2){
+    // Wire.write(sizeof(highScore));
+    Wire.write(0x01);
+    i2cState = I2C_STATE_READ_PT3;
 
-  // // If i2cState is I2C_STATE_READPT3 then the minibadge should send the text message one byte at a time.
-  // // Once it is done it should set i2cState to I2C_STATE_READPT3 to let the minibadge know to do nothing
-  // // until the badge inits communication again.
-  // }else if(i2cState == I2C_STATE_READPT3){
-  //   for(uint8_t i = 0; i < message_length; i++){
-  //     Wire.write(message[i]);
-  //   }
-  //   i2cState = I2C_STATE_NOP;
+  // If i2cState is I2C_STATE_READPT3 then the minibadge should send the text message one byte at a time.
+  // Once it is done it should set i2cState to I2C_STATE_READPT3 to let the minibadge know to do nothing
+  // until the badge inits communication again.
+  }else if(i2cState == I2C_STATE_READ_PT3){
+    // for(uint8_t i = 0; i < highScore; i++){
+      Wire.write(highScore);
+    // }
+    i2cState = I2C_STATE_NOP;
   }
 
-  /*
-  Wire.write(0x02); // Say we are responding with text.
-  //Wire.write(sizeof(highscore)); // Send the length of the message
-  Wire.write(0x01); // Only a single byte for the score?
-  Wire.write(highScore); // Send the current score as a byte
-  */
 }
 // Handle Recieiving data on I2C bus.
 // byteCount will store the number of bytes sent in the write event.
@@ -816,7 +836,8 @@ void RecieveI2CEvent(int byteCount){
       case I2C_WRITE_SCORE:
         // if this is a score update. The score is 32 bits long and in big endian.
         // Note that only a 4 bit score can be displayed on the screen, even though a larger score could be set.
-        highScore = (((uint32_t)Wire.read()) << 8) + (uint32_t)Wire.read();
+        // highScore = (((uint32_t)Wire.read()) << 8) + (uint32_t)Wire.read();
+        highScore = (((uint32_t)Wire.read()));
         break;
       case I2C_WRITE_BRIGHTNESS:
         // This is for a brightness update. The brightness range should be 0-127.
