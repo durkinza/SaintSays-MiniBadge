@@ -37,9 +37,9 @@
         "other_text_thickness": 0.15,
         "other_text_upright": false,
         "pads": {
-          "drill": 1.016,
-          "height": 1.778,
-          "width": 1.778
+          "drill": 0.0,
+          "height": 0.5,
+          "width": 1.0
         },
         "silk_line_width": 0.1,
         "silk_text_italic": false,
@@ -431,7 +431,7 @@
     "pinned_symbol_libs": []
   },
   "meta": {
-    "filename": "SaintSays-Flipped.kicad_pro",
+    "filename": "SaintSays.kicad_pro",
     "version": 1
   },
   "net_settings": {
